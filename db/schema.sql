@@ -1,0 +1,51 @@
+
+--
+-- Database schema
+--
+
+CREATE DATABASE test IF NOT EXISTS;
+
+CREATE TABLE test.sales_distributed
+(
+    `WEEK` Date32,
+    `COUNTRY_ID` Decimal(38, 9),
+    `REGION` String,
+    `PRODUCT_ID` Nullable(Decimal(38, 10)),
+    `UNITS` Nullable(Float64),
+    `DOLLAR_VOLUME` Nullable(Decimal(38, 10))
+)
+ENGINE = Distributed('replicated', 'test', 'sales_local', rand());
+
+CREATE TABLE test.sales_local
+(
+    `WEEK` Date32,
+    `COUNTRY_ID` Decimal(38, 9),
+    `REGION` String,
+    `PRODUCT_ID` Nullable(Decimal(38, 10)),
+    `UNITS` Nullable(Float64),
+    `DOLLAR_VOLUME` Nullable(Decimal(38, 10))
+)
+ENGINE = MergeTree
+PARTITION BY toYYYYMM(WEEK)
+ORDER BY (COUNTRY_ID, WEEK, REGION)
+SETTINGS index_granularity = 8192;
+
+CREATE TABLE test.schema_migrations
+(
+    `version` String,
+    `ts` DateTime DEFAULT now(),
+    `applied` UInt8 DEFAULT 1
+)
+ENGINE = ReplacingMergeTree(ts)
+PRIMARY KEY version
+ORDER BY version
+SETTINGS index_granularity = 8192;
+
+
+--
+-- Dbmate schema migrations
+--
+
+INSERT INTO schema_migrations (version) VALUES
+    ('20220415224306'),
+    ('20220415232010');
