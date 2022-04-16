@@ -122,9 +122,7 @@ system
 
 ```sh
 kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="CREATE DATABASE IF NOT EXISTS test"
-kubectl exec chi-repl-05-replicated-0-1-0 -n chns -- clickhouse-client -u analytics --password admin --query="CREATE DATABASE IF NOT EXISTS test"
 kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="CREATE DATABASE IF NOT EXISTS test"
-kubectl exec chi-repl-05-replicated-1-1-0 -n chns -- clickhouse-client -u analytics --password admin --query="CREATE DATABASE IF NOT EXISTS test"
 ```
 
 
@@ -157,8 +155,8 @@ kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analyt
 select data from the test database via another server (it does take sometime for the eventual consistency)
 
 ```sh
-kubectl exec chi-repl-05-replicated-1-1-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT count() FROM test.sales_distributed;"
-kubectl exec chi-repl-05-replicated-1-1-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT count() FROM test.sales_local;"
+kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT count() FROM test.sales_distributed;"
+kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT count() FROM test.sales_local;"
 ```
 
 ## cleanup

@@ -25,7 +25,8 @@ spec:
       - name: replicated
         layout:
           shardsCount: 2
-          replicasCount: 2
+          # FIXME: replica more than 1 causes the inconsistency of data
+          replicasCount: 1
 
   templates:
     volumeClaimTemplates:
