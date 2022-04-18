@@ -23,6 +23,8 @@
 
 ## setup
 
+tl;dr: `bash scrips/up.sh`
+
 ### install migration tools
 
 ```sh
@@ -149,6 +151,7 @@ dbmate --url clickhouse://analytics:admin@127.0.0.1:9000/test up
 ### migrate using [golang-migrate/migrate](https://github.com/golang-migrate/migrate/tree/master/database/clickhouse)
 
 caveats
+- FIXME: BROKEN
 - kind of support the multiple statements
 - [still hard to use migrate in some multi server environment](https://kb.altinity.com/altinity-kb-setup-and-maintenance/schema-migration-tools/golang-migrate/)
 
@@ -180,6 +183,8 @@ kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analyt
 ```
 
 ## cleanup
+
+tl;dr: `bash scrips/down.sh`
 
 ```sh
 kubectl delete -f clickhouse/ -n chns
