@@ -2,14 +2,14 @@
 
 - [prerequisites](#prerequisites)
 - [setup](#setup)
-  - [install dbmate](#install-dbmate)
+  - [install migration tools](#install-migration-tools)
   - [namespace](#namespace)
   - [zookeeper](#zookeeper)
   - [clickhouse](#clickhouse)
 - [operations](#operations)
   - [create the test database in every single node](#create-the-test-database-in-every-single-node)
   - [migrate using dbmate](#migrate-using-dbmate)
-  - [TODO: migrate using golang-migrate/migrate](#todo-migrate-using-golang-migratemigrate)
+  - [migrate using golang-migrate/migrate](#migrate-using-golang-migratemigrate)
   - [write/read from distributed tables](#writeread-from-distributed-tables)
 - [cleanup](#cleanup)
 
@@ -19,13 +19,15 @@
 - kubectl `v1.23.3`
 - Helm: `v3.7.2`
 - [dbmate](https://github.com/amacneil/dbmate) `v1.15.0`
+- [golang-migrate](https://github.com/golang-migrate/migrate/tree/master/cmd/migrate) `v4.15.1`
 
 ## setup
 
-### install dbmate
+### install migration tools
 
 ```sh
 brew install dbmate
+brew install golang-migrate
 ```
 
 ### namespace
@@ -41,7 +43,7 @@ follow the [bitnami zookeeper chart](https://github.com/bitnami/charts/tree/mast
 
 ```sh
 helm repo add bitnami https://charts.bitnami.com/bitnami
-helm install my-zookeeper bitnami/zookeeper --namespace zoons
+helm upgrade --install my-zookeeper bitnami/zookeeper --namespace zoons
 ```
 
 verify the installation
@@ -128,7 +130,9 @@ kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analyt
 
 ### migrate using [dbmate](https://github.com/amacneil/dbmate)
 
-[showstopper](https://github.com/amacneil/dbmate/issues/218): no multiple statements
+caveats
+- [no multiple statements](https://github.com/amacneil/dbmate/issues/218)
+- no cluster mode, the migration metadata is stored in only one node
 
 port forward the clickhouse pod
 
@@ -142,7 +146,23 @@ migrate the database
 dbmate --url clickhouse://analytics:admin@127.0.0.1:9000/test up
 ```
 
-### TODO: migrate using [golang-migrate/migrate](https://github.com/golang-migrate/migrate/tree/master/database/clickhouse)
+### migrate using [golang-migrate/migrate](https://github.com/golang-migrate/migrate/tree/master/database/clickhouse)
+
+caveats
+- kind of support the multiple statements
+- [still hard to use migrate in some multi server environment](https://kb.altinity.com/altinity-kb-setup-and-maintenance/schema-migration-tools/golang-migrate/)
+
+port forward the clickhouse pod
+
+```sh
+kubectl port-forward svc/clickhouse-repl-05 -n chns 9000:9000
+```
+
+migrate the database
+
+```sh
+migrate -source file://./golang-migrate/migrations -database 'clickhouse://analytics:admin@127.0.0.1:9000/database=test?x-multi-statement=true?x-cluster-name=replicated?x-migrations-table-engine=ReplicatedMergeTree' up
+```
 
 ### write/read from distributed tables
 
