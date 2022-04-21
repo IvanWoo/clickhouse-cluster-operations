@@ -10,6 +10,7 @@
   - [create the test database in every single node](#create-the-test-database-in-every-single-node)
   - [migrate using dbmate](#migrate-using-dbmate)
   - [migrate using golang-migrate/migrate](#migrate-using-golang-migratemigrate)
+  - [write/read from replicated tables](#writeread-from-replicated-tables)
   - [write/read from distributed tables](#writeread-from-distributed-tables)
 - [cleanup](#cleanup)
 
@@ -165,6 +166,21 @@ migrate the database
 
 ```sh
 migrate -source file://./golang-migrate/migrations -database 'clickhouse://analytics:admin@127.0.0.1:9000/database=test?x-multi-statement=true?x-cluster-name=replicated?x-migrations-table-engine=ReplicatedMergeTree' up
+```
+
+### write/read from replicated tables
+
+insert data into the replicated table
+
+```sh
+kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="INSERT INTO test.events_local SELECT today(), rand()%3, number, 'my title' FROM numbers(100);"
+```
+
+select data from the test database via all servers
+
+```sh
+kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT count() FROM test.events_local;"
+kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT count() FROM test.events_local;"
 ```
 
 ### write/read from distributed tables

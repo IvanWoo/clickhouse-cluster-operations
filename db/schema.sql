@@ -5,6 +5,17 @@
 
 CREATE DATABASE test IF NOT EXISTS;
 
+CREATE TABLE test.events_local
+(
+    `event_date` Date,
+    `event_type` Int32,
+    `article_id` Int32,
+    `title` String
+)
+ENGINE = ReplicatedMergeTree('/clickhouse/{installation}/{cluster}/tables/test/events_local', '{replica}')
+ORDER BY (event_type, article_id)
+SETTINGS index_granularity = 8192;
+
 CREATE TABLE test.sales_distributed
 (
     `WEEK` Date32,
@@ -48,4 +59,5 @@ SETTINGS index_granularity = 8192;
 
 INSERT INTO schema_migrations (version) VALUES
     ('20220415224306'),
-    ('20220415232010');
+    ('20220415232010'),
+    ('20220421153914');

@@ -1,5 +1,5 @@
 -- migrate:up
-CREATE TABLE IF NOT EXISTS sales_local ON CLUSTER replicated (
+CREATE TABLE IF NOT EXISTS sales_local ON CLUSTER '{cluster}' (
     WEEK Date32,
     COUNTRY_ID Decimal(38, 9),
     REGION String,
@@ -13,5 +13,5 @@ ORDER BY
     (COUNTRY_ID, WEEK, REGION);
 
 -- migrate:down
-DROP TABLE IF EXISTS sales_local ON CLUSTER replicated;
+DROP TABLE IF EXISTS sales_local ON CLUSTER '{cluster}';
 
