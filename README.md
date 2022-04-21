@@ -135,12 +135,29 @@ kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analyt
 
 caveats
 - [no multiple statements](https://github.com/amacneil/dbmate/issues/218)
-- no cluster mode, the migration metadata is stored in only one node
+- no cluster mode out of box: the migration metadata is stored in only one node
+  - can manually create the migration metadata in the cluster
 
 port forward the clickhouse pod
 
 ```sh
 kubectl port-forward svc/clickhouse-repl-05 -n chns 9000:9000
+```
+
+create the replicated migration metadata table
+
+```sh
+kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="DROP TABLE IF EXISTS test.schema_migrations ON CLUSTER '{cluster}';"
+
+kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="CREATE TABLE test.schema_migrations ON CLUSTER '{cluster}' 
+(
+    `version` String,
+    `ts` DateTime DEFAULT now(),
+    `applied` UInt8 DEFAULT 1
+)
+ENGINE = ReplicatedReplacingMergeTree('/clickhouse/{installation}/{cluster}/tables/{database}/{table}', '{replica}', ts)
+PRIMARY KEY version
+ORDER BY version;"
 ```
 
 migrate the database

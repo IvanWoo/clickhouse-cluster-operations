@@ -47,7 +47,7 @@ CREATE TABLE test.schema_migrations
     `ts` DateTime DEFAULT now(),
     `applied` UInt8 DEFAULT 1
 )
-ENGINE = ReplacingMergeTree(ts)
+ENGINE = ReplicatedReplacingMergeTree('/clickhouse/{installation}/{cluster}/tables/test/schema_migrations', '{replica}', ts)
 PRIMARY KEY version
 ORDER BY version
 SETTINGS index_granularity = 8192;
