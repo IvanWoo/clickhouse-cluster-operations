@@ -150,9 +150,9 @@ kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analyt
 
 kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="CREATE TABLE test.schema_migrations ON CLUSTER '{cluster}' 
 (
-    `version` String,
-    `ts` DateTime DEFAULT now(),
-    `applied` UInt8 DEFAULT 1
+    version String,
+    ts DateTime DEFAULT now(),
+    applied UInt8 DEFAULT 1
 )
 ENGINE = ReplicatedReplacingMergeTree('/clickhouse/{installation}/{cluster}/tables/{database}/{table}', '{replica}', ts)
 PRIMARY KEY version
