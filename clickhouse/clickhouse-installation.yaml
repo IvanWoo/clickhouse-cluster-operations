@@ -12,7 +12,7 @@ spec:
 
   configuration:
     users:
-      # change the deufalt password will cause auth failour of distirubted read
+      # change the default password will cause auth failure of distributed read
       # default/password: admin
       analytics/password: admin
       analytics/profile: default
