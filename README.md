@@ -24,7 +24,7 @@
 
 ## setup
 
-tl;dr: `bash scrips/up.sh`
+tl;dr: `bash scripts/up.sh`
 
 ### install migration tools
 
@@ -216,7 +216,7 @@ kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analyt
 
 ## cleanup
 
-tl;dr: `bash scrips/down.sh`
+tl;dr: `bash scripts/down.sh`
 
 ```sh
 kubectl delete -f clickhouse/ -n chns
