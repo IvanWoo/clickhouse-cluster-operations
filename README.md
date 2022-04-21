@@ -7,7 +7,7 @@
   - [zookeeper](#zookeeper)
   - [clickhouse](#clickhouse)
 - [operations](#operations)
-  - [create the test database in every single node](#create-the-test-database-in-every-single-node)
+  - [create the test database on cluster](#create-the-test-database-on-cluster)
   - [migrate using dbmate](#migrate-using-dbmate)
   - [migrate using golang-migrate/migrate](#migrate-using-golang-migratemigrate)
   - [write/read from replicated tables](#writeread-from-replicated-tables)
@@ -123,11 +123,10 @@ system
 
 ## operations
 
-### create the test database in every single node
+### create the test database on cluster
 
 ```sh
-kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="CREATE DATABASE IF NOT EXISTS test"
-kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="CREATE DATABASE IF NOT EXISTS test"
+kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="CREATE DATABASE IF NOT EXISTS test ON CLUSTER '{cluster}'"
 ```
 
 
