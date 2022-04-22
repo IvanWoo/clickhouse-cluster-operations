@@ -12,6 +12,7 @@
   - [migrate using golang-migrate/migrate](#migrate-using-golang-migratemigrate)
   - [write/read from replicated tables](#writeread-from-replicated-tables)
   - [write/read from distributed tables](#writeread-from-distributed-tables)
+  - [truncate the distributed tables](#truncate-the-distributed-tables)
 - [cleanup](#cleanup)
 
 ## prerequisites
@@ -213,6 +214,14 @@ select data from the test database via another server (it does take sometime for
 kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT count() FROM test.sales_distributed;"
 kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT count() FROM test.sales_local;"
 ```
+
+### truncate the distributed tables
+
+we can only truncate the local tables rather than the distributed proxy tables
+
+```sh
+kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="TRUNCATE TABLE IF EXISTS test.sales_local ON CLUSTER '{cluster}';"
+``` 
 
 ## cleanup
 
