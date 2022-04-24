@@ -13,6 +13,9 @@
   - [write/read from replicated tables](#writeread-from-replicated-tables)
   - [write/read from distributed tables](#writeread-from-distributed-tables)
   - [truncate the distributed tables](#truncate-the-distributed-tables)
+  - [exchange tables](#exchange-tables)
+    - [create table with schema similar to the distributed table](#create-table-with-schema-similar-to-the-distributed-table)
+    - [exchange the tables](#exchange-the-tables)
 - [cleanup](#cleanup)
 
 ## prerequisites
@@ -126,8 +129,10 @@ system
 
 ### create the test database on cluster
 
+**attention**: we need to specify the engine type Atomic for cluster;
+
 ```sh
-kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="CREATE DATABASE IF NOT EXISTS test ON CLUSTER '{cluster}'"
+kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="CREATE DATABASE IF NOT EXISTS test ON CLUSTER '{cluster}' ENGINE=Atomic"
 ```
 
 
@@ -222,6 +227,91 @@ we can only truncate the local tables rather than the distributed proxy tables
 ```sh
 kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="TRUNCATE TABLE IF EXISTS test.sales_local ON CLUSTER '{cluster}';"
 ``` 
+
+
+### exchange tables 
+
+#### create table with schema similar to the distributed table
+
+create the temp local and distributed tables, b/c distributed table is the proxy point to the previous local table, we need to overwrite the ENGINE to point to the temp local table
+
+```sh
+kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="CREATE TABLE IF NOT EXISTS test.temp_sales_local ON CLUSTER '{cluster}' AS test.sales_local"
+kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="CREATE TABLE IF NOT EXISTS test.temp_sales_distributed ON CLUSTER '{cluster}' AS test.sales_distributed ENGINE = Distributed('{cluster}', test, temp_sales_local, rand())"
+```
+
+verify
+
+```sh
+kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT count() FROM test.temp_sales_distributed;"
+kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT count() FROM test.temp_sales_local;"
+```
+
+```sh
+0
+0
+```
+
+cleanup the original tables with the truncate above
+
+```sh
+kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="TRUNCATE TABLE IF EXISTS test.sales_local ON CLUSTER '{cluster}';"
+```
+
+insert dummy data into all tables: 500 rows for original tables, 300 rows for temp tables
+
+
+```sh
+kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="INSERT INTO test.sales_distributed SELECT today(), rand()%10, 'ON', rand(), rand() + 0.42, rand() FROM numbers(500);"
+
+kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="INSERT INTO test.temp_sales_distributed SELECT today(), rand()%10, 'ON', rand(), rand() + 0.42, rand() FROM numbers(300);"
+```
+
+verify
+
+```sh
+kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT count() FROM test.sales_distributed;"
+kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT count() FROM test.temp_sales_distributed;"
+```
+
+```sh
+500
+300
+```
+
+#### exchange the tables
+
+**attention**: you just need to exchange local tables, b/c the distributed table points to a hard coded local table
+
+```sh
+kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="EXCHANGE TABLES test.temp_sales_local AND test.sales_local ON CLUSTER '{cluster}';"
+# kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="EXCHANGE TABLES test.temp_sales_distributed AND test.sales_distributed ON CLUSTER '{cluster}';"
+```
+
+verify
+
+```sh
+kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT count() FROM test.sales_distributed;"
+kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT count() FROM test.temp_sales_distributed;"
+```
+
+```sh
+300
+500
+```
+
+drop the temp tables
+
+```sh
+kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="DROP TABLE IF EXISTS test.temp_sales_local ON CLUSTER '{cluster}';"
+kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="DROP TABLE IF EXISTS test.temp_sales_distributed ON CLUSTER '{cluster}';"
+```
+
+verify
+
+```sh
+kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="SHOW TABLES IN test;"
+```
 
 ## cleanup
 
