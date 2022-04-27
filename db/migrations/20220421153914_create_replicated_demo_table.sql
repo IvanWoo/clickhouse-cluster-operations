@@ -8,4 +8,4 @@ CREATE TABLE IF NOT EXISTS events_local on cluster '{cluster}' (
 ORDER BY (event_type, article_id);
 
 -- migrate:down
-DROP TABLE IF EXISTS events_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS events_local ON CLUSTER '{cluster}' SYNC;
