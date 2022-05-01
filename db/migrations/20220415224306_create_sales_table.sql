@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS sales_local ON CLUSTER '{cluster}' (
     PRODUCT_ID Nullable(Decimal(38, 10)),
     UNITS Nullable(Float64),
     DOLLAR_VOLUME Nullable(Decimal(38, 10))
-) ENGINE = MergeTree
+) ENGINE = ReplicatedMergeTree('/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}', '{replica}')
 PARTITION BY
     toYYYYMM(WEEK)
 ORDER BY

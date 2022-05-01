@@ -108,6 +108,8 @@ clickhouse-operator-78f59f855b-pqntt      2/2     Running     0               57
 
 install the clickhouse via the operator
 
+**attention**: it takes around 10 mins for a 2 replica + 2 shards cluster to be ready.
+
 ```sh
 kubectl apply -f clickhouse/ -n chns
 ```
@@ -192,6 +194,8 @@ migrate -source file://./golang-migrate/migrations -database 'clickhouse://analy
 
 ### write/read from replicated tables
 
+**attention**: it takes sometimes for the eventual consistency between different replicas.
+
 insert data into the replicated table
 
 ```sh
@@ -203,9 +207,13 @@ select data from the test database via all servers
 ```sh
 kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT count() FROM test.events_local;"
 kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT count() FROM test.events_local;"
+kubectl exec chi-repl-05-replicated-0-1-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT count() FROM test.events_local;"
+kubectl exec chi-repl-05-replicated-1-1-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT count() FROM test.events_local;"
 ```
 
 ### write/read from distributed tables
+
+**attention**: it takes sometimes for the eventual consistency between different replicas.
 
 insert data into the test database
 
@@ -213,7 +221,21 @@ insert data into the test database
 kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="INSERT INTO test.sales_distributed SELECT today(), rand()%10, 'ON', rand(), rand() + 0.42, rand() FROM numbers(100);"
 ```
 
-select data from the test database via another server (it does take sometime for the eventual consistency)
+verify the data
+
+```sh
+kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT count() FROM test.sales_distributed;"
+kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT count() FROM test.sales_local;"
+```
+
+select data from the test database via another replica
+
+```sh
+kubectl exec chi-repl-05-replicated-0-1-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT count() FROM test.sales_distributed;"
+kubectl exec chi-repl-05-replicated-0-1-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT count() FROM test.sales_local;"
+```
+
+select data from the test database via another shard
 
 ```sh
 kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT count() FROM test.sales_distributed;"
@@ -233,10 +255,24 @@ kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analyt
 
 #### create table with schema similar to the distributed table
 
-create the temp local and distributed tables, b/c distributed table is the proxy point to the previous local table, we need to overwrite the ENGINE to point to the temp local table
+create the temp local and distributed tables
+- we cannot use `"CREATE TABLE IF NOT EXISTS test.temp_sales_local ON CLUSTER '{cluster}' AS test.sales_local"` b/c the zookeeper path must be unique.
+- b/c distributed table is the proxy point to the previous local table, we need to overwrite the ENGINE to point to the temp local table.
 
 ```sh
-kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="CREATE TABLE IF NOT EXISTS test.temp_sales_local ON CLUSTER '{cluster}' AS test.sales_local"
+kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="
+CREATE TABLE IF NOT EXISTS test.temp_sales_local ON CLUSTER '{cluster}' (
+    WEEK Date32,
+    COUNTRY_ID Decimal(38, 9),
+    REGION String,
+    PRODUCT_ID Nullable(Decimal(38, 10)),
+    UNITS Nullable(Float64),
+    DOLLAR_VOLUME Nullable(Decimal(38, 10))
+) ENGINE = ReplicatedMergeTree('/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}', '{replica}')
+PARTITION BY
+    toYYYYMM(WEEK)
+ORDER BY
+    (COUNTRY_ID, WEEK, REGION);"
 kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="CREATE TABLE IF NOT EXISTS test.temp_sales_distributed ON CLUSTER '{cluster}' AS test.sales_distributed ENGINE = Distributed('{cluster}', test, temp_sales_local, rand())"
 ```
 

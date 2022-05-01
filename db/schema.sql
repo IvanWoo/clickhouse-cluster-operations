@@ -36,7 +36,7 @@ CREATE TABLE test.sales_local
     `UNITS` Nullable(Float64),
     `DOLLAR_VOLUME` Nullable(Decimal(38, 10))
 )
-ENGINE = MergeTree
+ENGINE = ReplicatedMergeTree('/clickhouse/{installation}/{cluster}/tables/{shard}/test/sales_local', '{replica}')
 PARTITION BY toYYYYMM(WEEK)
 ORDER BY (COUNTRY_ID, WEEK, REGION)
 SETTINGS index_granularity = 8192;
