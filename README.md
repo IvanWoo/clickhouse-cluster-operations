@@ -134,6 +134,7 @@ system
 **attention**: we need to specify the engine type Atomic for cluster;
 
 ```sh
+kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="DROP DATABASE IF EXISTS test ON CLUSTER '{cluster}'"
 kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="CREATE DATABASE IF NOT EXISTS test ON CLUSTER '{cluster}' ENGINE=Atomic"
 ```
 
@@ -177,8 +178,24 @@ dbmate --url clickhouse://analytics:admin@127.0.0.1:9000/test up
 
 caveats
 - FIXME: BROKEN
-- kind of support the multiple statements
+- very buggy
+- poor documentation, it didn't work the way described in the docs
+- claim support the multiple statements, but I didn't make it work
 - [still hard to use migrate in some multi server environment](https://kb.altinity.com/altinity-kb-setup-and-maintenance/schema-migration-tools/golang-migrate/)
+
+create the replicated migration metadata table
+
+```sh
+kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="CREATE TABLE test.schema_migrations ON CLUSTER '{cluster}' 
+(
+    version UInt32,
+    dirty UInt8,
+    sequence UInt64
+)
+ENGINE = ReplicatedMergeTree('/clickhouse/{installation}/{cluster}/tables/{database}/{table}/1', '{replica}')
+PRIMARY KEY version
+ORDER BY version;"
+```
 
 port forward the clickhouse pod
 
@@ -189,7 +206,7 @@ kubectl port-forward svc/clickhouse-repl-05 -n chns 9000:9000
 migrate the database
 
 ```sh
-migrate -source file://./golang-migrate/migrations -database 'clickhouse://analytics:admin@127.0.0.1:9000/database=test?x-multi-statement=true?x-cluster-name=replicated?x-migrations-table-engine=ReplicatedMergeTree' up
+migrate -source file://./golang-migrate/migrations -database "clickhouse://analytics:admin@127.0.0.1:9000/x-multi-statement=true?database=test" up
 ```
 
 ### write/read from replicated tables
