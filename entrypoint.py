@@ -8,8 +8,24 @@ import logging
 from enum import Enum
 from urllib.parse import urlparse
 
-logger = logging.getLogger(__name__)
-logging.getLogger().addHandler(logging.StreamHandler())
+
+def get_logger(logger_name):
+    FORMATTER = logging.Formatter(
+        "%(asctime)s %(name)s %(levelname)s %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%S%z",
+    )
+
+    def get_sys_handler():
+        syslog = logging.StreamHandler()
+        syslog.setFormatter(FORMATTER)
+        return syslog
+
+    logger = logging.getLogger(logger_name)
+    logger.addHandler(get_sys_handler())
+    return logger
+
+
+logger = get_logger(__name__)
 
 SCHEMA_MIGRATIONS_DDL = """
 CREATE TABLE IF NOT EXISTS schema_migrations ON CLUSTER '{cluster}' 
@@ -70,7 +86,7 @@ def run_dbmate_operation(operation):
     if res.stderr:
         logger.warning(res.stderr)
         return
-    logger.info(res.stdout)
+    logger.critical(res.stdout)
     return
 
 
