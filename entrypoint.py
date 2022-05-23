@@ -73,7 +73,7 @@ def run_dbmate_operation(operation):
     return
 
 
-class DataBase(Enum):
+class Database(Enum):
     TEST = "test"
 
     def __str__(self):
@@ -97,8 +97,8 @@ def main():
         "-db",
         "--database",
         required=True,
-        type=DataBase,
-        choices=list(DataBase),
+        type=Database,
+        choices=list(Database),
         help="target database",
     )
     parser.add_argument(
