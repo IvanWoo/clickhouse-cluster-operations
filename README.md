@@ -2,13 +2,15 @@
 
 - [prerequisites](#prerequisites)
 - [setup](#setup)
-  - [install migration tools](#install-migration-tools)
+  - [build images](#build-images)
   - [namespace](#namespace)
   - [zookeeper](#zookeeper)
   - [clickhouse](#clickhouse)
 - [operations](#operations)
   - [create the test database on cluster](#create-the-test-database-on-cluster)
   - [migrate using dbmate](#migrate-using-dbmate)
+    - [on k8s cluster(preferred)](#on-k8s-clusterpreferred)
+    - [on local mac machine](#on-local-mac-machine)
   - [migrate using golang-migrate/migrate](#migrate-using-golang-migratemigrate)
   - [write/read from replicated tables](#writeread-from-replicated-tables)
   - [write/read from distributed tables](#writeread-from-distributed-tables)
@@ -30,11 +32,10 @@
 
 tl;dr: `bash scripts/up.sh`
 
-### install migration tools
+### build images
 
 ```sh
-brew install dbmate
-brew install golang-migrate
+docker --namespace=k8s.io build -t my/dbmate -f Dockerfile .
 ```
 
 ### namespace
@@ -141,10 +142,41 @@ kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analyt
 
 ### migrate using [dbmate](https://github.com/amacneil/dbmate)
 
-caveats
+known caveats
 - [no multiple statements](https://github.com/amacneil/dbmate/issues/218)
 - no cluster mode out of box: the migration metadata is stored in only one node
-  - can manually create the migration metadata in the cluster
+  - can manually create the migration metadata in the cluster first
+- FIXME: `dbmate status` didn't work
+  - `Error: sql: expected 0 arguments, got 1`
+
+#### on k8s cluster(preferred)
+
+```sh
+kubectl run dbmate-migrate -n chns -ti --rm --restart=Never --image=my/dbmate --overrides='
+{
+  "spec": {
+    "containers":[{
+      "name": "migrate",
+      "image": "my/dbmate",
+      "imagePullPolicy":"Never",
+      "args": ["-db", "test", "up"],
+      "stdin": true,
+      "tty": true,
+      "env": [
+        {"name":"DATABASE_URL","value":"clickhouse://analytics:admin@clickhouse-repl-05.chns:9000"}
+      ]
+    }]
+  }
+}'
+```
+
+#### on local mac machine
+
+install migration tools
+
+```sh
+brew install dbmate
+```
 
 port forward the clickhouse pod
 
@@ -163,7 +195,7 @@ kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analyt
     ts DateTime DEFAULT now(),
     applied UInt8 DEFAULT 1
 )
-ENGINE = ReplicatedReplacingMergeTree('/clickhouse/{installation}/{cluster}/tables/{database}/{table}', '{replica}', ts)
+ENGINE = ReplicatedReplacingMergeTree('/clickhouse/{cluster}/tables/{database}/{table}', '{replica}', ts)
 PRIMARY KEY version
 ORDER BY version;"
 ```
@@ -173,6 +205,7 @@ migrate the database
 ```sh
 dbmate --url clickhouse://analytics:admin@127.0.0.1:9000/test up
 ```
+
 
 ### migrate using [golang-migrate/migrate](https://github.com/golang-migrate/migrate/tree/master/database/clickhouse)
 
