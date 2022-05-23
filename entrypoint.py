@@ -9,9 +9,10 @@ from enum import Enum
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
+logging.getLogger().addHandler(logging.StreamHandler())
 
 SCHEMA_MIGRATIONS_DDL = """
-CREATE TABLE schema_migrations ON CLUSTER '{cluster}' 
+CREATE TABLE IF NOT EXISTS schema_migrations ON CLUSTER '{cluster}' 
 (
     version String,
     ts DateTime DEFAULT now(),
