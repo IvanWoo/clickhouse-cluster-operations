@@ -1,5 +1,6 @@
 FROM clickhouse/clickhouse-server
 
+ARG DBMATE_VERSION="v1.13.0"
 ARG DBMATE_USER_HOME=/var/lib/dbmate
 ARG DBMATE_USER="dbmate"
 ARG DBMATE_UID="1000"
@@ -12,7 +13,7 @@ RUN mkdir $DBMATE_USER_HOME && \
     apt-get update && \
     apt-get install -y --no-install-recommends $buildDeps && \
     # install dbmate
-    curl -fsSL -o /usr/local/bin/dbmate https://github.com/amacneil/dbmate/releases/latest/download/dbmate-linux-amd64 && \
+    curl -fsSL -o /usr/local/bin/dbmate https://github.com/amacneil/dbmate/releases/download/$DBMATE_VERSION/dbmate-linux-amd64 && \
     chmod +x /usr/local/bin/dbmate && \
     apt-get purge --auto-remove -yqq $buildDeps && \
     apt-get autoremove -yqq --purge && \

@@ -146,7 +146,7 @@ known caveats
 - [no multiple statements](https://github.com/amacneil/dbmate/issues/218)
 - no cluster mode out of box: the migration metadata is stored in only one node
   - can manually create the migration metadata in the cluster first
-- FIXME: `dbmate status` didn't work
+- `dbmate status` didn't work >= v1.14.0 due to [this pr](https://github.com/amacneil/dbmate/pull/242)
   - `Error: sql: expected 0 arguments, got 1`
 
 #### on k8s cluster(preferred)
