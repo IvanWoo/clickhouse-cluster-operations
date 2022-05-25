@@ -12,5 +12,5 @@ kubectl create namespace chns
 kubectl apply -f https://raw.githubusercontent.com/Altinity/clickhouse-operator/master/deploy/operator/clickhouse-operator-install-bundle.yaml
 kubectl apply -f clickhouse/ -n chns
 helm repo add bitnami https://charts.bitnami.com/bitnami
-helm upgrade --install my-zookeeper bitnami/zookeeper --namespace zoons
+helm upgrade --install my-zookeeper bitnami/zookeeper --namespace zoons -f zookeeper/values.yaml
 )

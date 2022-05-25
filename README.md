@@ -51,7 +51,7 @@ follow the [bitnami zookeeper chart](https://github.com/bitnami/charts/tree/mast
 
 ```sh
 helm repo add bitnami https://charts.bitnami.com/bitnami
-helm upgrade --install my-zookeeper bitnami/zookeeper --namespace zoons
+helm upgrade --install my-zookeeper bitnami/zookeeper --namespace zoons -f zookeeper/values.yaml
 ```
 
 verify the installation
