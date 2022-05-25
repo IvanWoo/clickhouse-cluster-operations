@@ -23,7 +23,7 @@ RUN mkdir $DBMATE_USER_HOME && \
 RUN apt-get update && \
     apt-get install -y --no-install-recommends python3.9
 
-USER $DBMATE_UID
+USER $DBMATE_USER
 
 WORKDIR $DBMATE_USER_HOME
 
