@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 
 def get_logger(logger_name):
     FORMATTER = logging.Formatter(
-        "%(asctime)s %(name)s %(levelname)s %(message)s",
+        "%(asctime)s %(name)s %(funcName)s %(lineno)d %(levelname)s %(message)s",
         datefmt="%Y-%m-%dT%H:%M:%S%z",
     )
 
@@ -25,7 +25,7 @@ def get_logger(logger_name):
     return logger
 
 
-logger = get_logger(__name__)
+logger = get_logger(__file__)
 
 SCHEMA_MIGRATIONS_DDL = """
 CREATE TABLE IF NOT EXISTS schema_migrations ON CLUSTER '{cluster}' 
