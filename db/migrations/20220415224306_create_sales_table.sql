@@ -13,5 +13,5 @@ ORDER BY
     (COUNTRY_ID, WEEK, REGION);
 
 -- migrate:down
-DROP TABLE IF EXISTS sales_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS sales_local ON CLUSTER '{cluster}' SYNC;
 

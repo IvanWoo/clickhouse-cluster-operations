@@ -9,4 +9,4 @@ CREATE TABLE IF NOT EXISTS sales_distributed ON CLUSTER '{cluster}' (
 ) ENGINE = Distributed(replicated, currentDatabase(), sales_local, rand());
 
 -- migrate:down
-DROP TABLE IF EXISTS sales_distributed ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS sales_distributed ON CLUSTER '{cluster}' SYNC;
