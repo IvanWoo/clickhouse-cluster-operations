@@ -19,6 +19,8 @@
     - [create table with schema similar to the distributed table](#create-table-with-schema-similar-to-the-distributed-table)
     - [exchange the tables](#exchange-the-tables)
 - [cleanup](#cleanup)
+- [gotcha](#gotcha)
+  - [migrations](#migrations)
 
 ## prerequisites
 - [Rancher Desktop](https://github.com/rancher-sandbox/rancher-desktop): `1.2.1`
@@ -411,4 +413,21 @@ kubectl delete pvc --all -n zoons
 kubectl delete pvc --all -n chns
 kubectl delete namespace zoons
 kubectl delete namespace chns
+```
+
+## gotcha
+
+### migrations
+
+```sh
+Error: code: 253, message: There was an error on [chi-repl-05-replicated-0-1:9000]: Code: 253. DB::Exception: Replica /clickhouse/repl-05/replicated/tables/test/events_local/replicas/chi-repl-05-replicated-0-1 already exists. (REPLICA_IS_ALREADY_EXIST) (version 22.3.3.44 (official build))
+```
+
+due to the nature of the replication setup, migrations up and down very quickly can cause the above issue.
+the solution is to have `SYNC` on the down sql statement, which will wait for the replica to be removed before proceeding.
+
+the final solution is to delete all the information regarding the replication on Zookeeper
+
+```sh
+zkCli.sh deleteall /clickhouse/repl-05/replicated/tables/test/events_local
 ```
