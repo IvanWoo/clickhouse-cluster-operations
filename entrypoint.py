@@ -1,12 +1,24 @@
 #!/usr/bin/env python3
 import argparse
-from operator import itemgetter
 import os
 import shlex
 import subprocess
 import logging
 from enum import Enum
+from operator import itemgetter
 from urllib.parse import urlparse
+
+
+class ClickhouseMigrationException(Exception):
+    pass
+
+
+class MetadataError(ClickhouseMigrationException):
+    pass
+
+
+class OperationError(ClickhouseMigrationException):
+    pass
 
 
 def get_logger(logger_name):
@@ -44,11 +56,6 @@ def db_url():
     return os.environ["DATABASE_URL"]
 
 
-def update_db_url(db):
-    original_db_url = db_url()
-    os.environ["DATABASE_URL"] = f"{original_db_url}/{db}"
-
-
 def parse_db_url(url):
     parsed = urlparse(url)
     return {
@@ -63,29 +70,39 @@ def run(cmd):
     return subprocess.run(shlex.split(cmd), capture_output=True)
 
 
-def compile_cmd(db):
+def compile_clickhouse_query_cmd(db, query):
     parsed_db_url = parse_db_url(db_url())
     hostname, port, username, password = itemgetter(
         "hostname", "port", "username", "password"
     )(parsed_db_url)
-    return f'clickhouse-client -h {hostname} --port {port} -u {username} --password {password} -d {db} --query="{SCHEMA_MIGRATIONS_DDL}"'
+
+    return f'clickhouse-client -h {hostname} --port {port} -u {username} --password {password} -d {db} --query="{query}"'
+
+
+def compile_dbmate_operation_cmd(db, operation, parameters):
+    database_url = f"{db_url()}/{db}"
+    migrations_dir = f"./databases/{db}/migrations"
+    schema_file = f"./databases/{db}/schema.sql"
+
+    return f"dbmate --url {database_url} --migrations-dir {migrations_dir} --schema-file {schema_file} {operation} {parameters}"
 
 
 def create_metadata_table(db):
-    cmd = compile_cmd(db)
+    cmd = compile_clickhouse_query_cmd(db, SCHEMA_MIGRATIONS_DDL)
     res = run(cmd)
     if res.stderr:
-        logger.warning(res.stderr)
-        return
-    logger.info(res.stdout)
+        logger.error(res.stderr)
+        raise MetadataError
+    logger.critical(res.stdout)
     return
 
 
-def run_dbmate_operation(operation):
-    res = run(f"dbmate {operation}")
+def run_dbmate_operation(db, operation, parameters):
+    cmd = compile_dbmate_operation_cmd(db, operation, parameters)
+    res = run(cmd)
     if res.stderr:
-        logger.warning(res.stderr)
-        return
+        logger.error(res.stderr)
+        raise OperationError
     logger.critical(res.stdout)
     return
 
@@ -97,10 +114,10 @@ class Database(Enum):
         return self.value
 
 
-class DbMateOperation(Enum):
+class DbmateOperation(Enum):
+    HELP = "help"
+    NEW = "new"
     STATUS = "status"
-    UP = "up"
-    DOWN = "down"
     MIGRATE = "migrate"
     ROLLBACK = "rollback"
 
@@ -119,17 +136,22 @@ def main():
         help="target database",
     )
     parser.add_argument(
+        "-p",
+        "--parameters",
+        help="dbmate operation additional paramters",
+    )
+    parser.add_argument(
         "operation",
-        type=DbMateOperation,
-        choices=list(DbMateOperation),
-        help="dbmate operations",
+        type=DbmateOperation,
+        choices=list(DbmateOperation),
+        help="dbmate operation",
     )
 
     args = parser.parse_args()
 
-    update_db_url(args.database)
     create_metadata_table(args.database)
-    run_dbmate_operation(args.operation)
+    run_dbmate_operation(args.database, args.operation, args.parameters)
+    return
 
 
 if __name__ == "__main__":

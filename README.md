@@ -153,6 +153,8 @@ known caveats
 
 #### on k8s cluster(preferred)
 
+run all migrations
+
 ```sh
 kubectl run dbmate-migrate -n chns -ti --rm --restart=Never --image=my/dbmate --overrides='
 {
@@ -161,13 +163,35 @@ kubectl run dbmate-migrate -n chns -ti --rm --restart=Never --image=my/dbmate --
       "name": "migrate",
       "image": "my/dbmate",
       "imagePullPolicy":"Never",
-      "args": ["-db", "test", "up"],
+      "args": ["-db", "test", "migrate"],
       "stdin": true,
       "tty": true,
       "env": [
         {"name":"DATABASE_URL","value":"clickhouse://analytics:admin@clickhouse-repl-05.chns:9000"}
       ]
     }]
+  }
+}'
+```
+
+create new migration
+
+```sh
+kubectl run dbmate-migrate -n chns -ti --rm --restart=Never --image=my/dbmate --overrides='
+{
+  "spec": {
+    "containers":[{
+      "name": "migrate",
+      "image": "my/dbmate",
+      "imagePullPolicy":"Never",
+      "args": ["-db", "test", "new", "-p", "new one"],
+      "stdin": true,
+      "tty": true,
+      "env": [
+        {"name":"DATABASE_URL","value":"clickhouse://analytics:admin@clickhouse-repl-05.chns:9000"}
+      ],"volumeMounts": [{"mountPath": "/app/databases","name": "store"}]
+    }],
+    "volumes": [{"name":"store","hostPath":{"path":"'$PWD/databases'","type":"Directory"}}]
   }
 }'
 ```
