@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS sales_distributed ON CLUSTER '{cluster}' (
     PRODUCT_ID Nullable(Decimal(38, 10)),
     UNITS Nullable(Float64),
     DOLLAR_VOLUME Nullable(Decimal(38, 10))
-) ENGINE = Distributed(replicated, currentDatabase(), sales_local, rand());
+) ENGINE = Distributed('{cluster}', currentDatabase(), sales_local, rand());
 
 -- migrate:down
 DROP TABLE IF EXISTS sales_distributed ON CLUSTER '{cluster}' SYNC;
