@@ -11,6 +11,8 @@ spec:
       podTemplate: clickhouse:22.3
 
   configuration:
+    settings:
+      macros/replicated_shards_cluster: "replicated"
     users:
       # change the default password will cause auth failure of distributed read
       # default/password: admin
