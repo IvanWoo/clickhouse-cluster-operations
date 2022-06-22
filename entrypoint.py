@@ -52,6 +52,34 @@ ORDER BY version;
 """
 
 
+class Database(Enum):
+    TEST = "test"
+    TEST_DEVELOPMENT = "test_development"
+    TEST_TEST = "test_test"
+
+    def __str__(self):
+        return self.value
+
+
+DATABASE_CONFIG = {
+    Database.TEST: {
+        "database_name": "test",
+        "migrations_dir": "./databases/test/migrations",
+        "schema_file": "./databases/test/schema.sql",
+    },
+    Database.TEST_DEVELOPMENT: {
+        "database_name": "test_development",
+        "migrations_dir": "./databases/test/migrations",
+        "schema_file": "./databases/test/schema.sql",
+    },
+    Database.TEST_TEST: {
+        "database_name": "test_test",
+        "migrations_dir": "./databases/test/migrations",
+        "schema_file": "./databases/test/schema.sql",
+    },
+}
+
+
 def db_url():
     return os.environ["DATABASE_URL"]
 
@@ -80,9 +108,10 @@ def compile_clickhouse_query_cmd(db, query):
 
 
 def compile_dbmate_operation_cmd(db, operation, parameters):
-    database_url = f"{db_url()}/{db}"
-    migrations_dir = f"./databases/{db}/migrations"
-    schema_file = f"./databases/{db}/schema.sql"
+    database_name, migrations_dir, schema_file = itemgetter(
+        "database_name", "migrations_dir", "schema_file"
+    )(DATABASE_CONFIG[db])
+    database_url = f"{db_url()}/{database_name}"
 
     return f"dbmate --url {database_url} --migrations-dir {migrations_dir} --schema-file {schema_file} {operation} {parameters}"
 
@@ -105,13 +134,6 @@ def run_dbmate_operation(db, operation, parameters):
         raise OperationError
     logger.critical(res.stdout)
     return
-
-
-class Database(Enum):
-    TEST = "test"
-
-    def __str__(self):
-        return self.value
 
 
 class DbmateOperation(Enum):
@@ -149,8 +171,12 @@ def main():
 
     args = parser.parse_args()
 
-    create_metadata_table(args.database)
-    run_dbmate_operation(args.database, args.operation, args.parameters)
+    database = args.database
+    operation = args.operation
+    parameters = args.parameters
+
+    create_metadata_table(database)
+    run_dbmate_operation(database, operation, parameters)
     return
 
 
