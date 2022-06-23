@@ -13,6 +13,8 @@ spec:
   configuration:
     settings:
       macros/replicated_shards_cluster: "replicated"
+    profiles:
+      default/union_default_mode: "DISTINCT"
     users:
       # change the default password will cause auth failure of distributed read
       # default/password: admin
