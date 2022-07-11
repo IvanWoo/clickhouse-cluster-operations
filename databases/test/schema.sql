@@ -16,6 +16,22 @@ ENGINE = ReplicatedMergeTree('/clickhouse/{installation}/{cluster}/tables/test/e
 ORDER BY (event_type, article_id)
 SETTINGS index_granularity = 8192;
 
+CREATE TABLE test.products_distributed
+(
+    `PRODUCT_ID` Decimal(38, 10),
+    `PRODUCT_NAME` String
+)
+ENGINE = Distributed('{cluster}', 'test', 'products_local', rand());
+
+CREATE TABLE test.products_local
+(
+    `PRODUCT_ID` Decimal(38, 10),
+    `PRODUCT_NAME` String
+)
+ENGINE = ReplicatedMergeTree('/clickhouse/{installation}/{cluster}/tables/{shard}/test/products_local', '{replica}')
+ORDER BY PRODUCT_ID
+SETTINGS index_granularity = 8192;
+
 CREATE TABLE test.sales_distributed
 (
     `WEEK` Date32,
@@ -25,7 +41,7 @@ CREATE TABLE test.sales_distributed
     `UNITS` Nullable(Float64),
     `DOLLAR_VOLUME` Nullable(Decimal(38, 10))
 )
-ENGINE = Distributed('replicated', 'test', 'sales_local', rand());
+ENGINE = Distributed('{cluster}', 'test', 'sales_local', rand());
 
 CREATE TABLE test.sales_local
 (
@@ -60,4 +76,5 @@ SETTINGS index_granularity = 8192;
 INSERT INTO schema_migrations (version) VALUES
     ('20220415224306'),
     ('20220415232010'),
-    ('20220421153914');
+    ('20220421153914'),
+    ('20220711214633');

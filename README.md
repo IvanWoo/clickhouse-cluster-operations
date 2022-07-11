@@ -15,6 +15,7 @@
   - [write/read from replicated tables](#writeread-from-replicated-tables)
   - [write/read from distributed tables](#writeread-from-distributed-tables)
   - [truncate the distributed tables](#truncate-the-distributed-tables)
+  - [join two distributed tables](#join-two-distributed-tables)
   - [exchange tables](#exchange-tables)
     - [create table with schema similar to the distributed table](#create-table-with-schema-similar-to-the-distributed-table)
     - [exchange the tables](#exchange-the-tables)
@@ -168,8 +169,9 @@ kubectl run dbmate-migrate -n chns -ti --rm --restart=Never --image=my/dbmate --
       "tty": true,
       "env": [
         {"name":"DATABASE_URL","value":"clickhouse://analytics:admin@clickhouse-repl-05.chns:9000"}
-      ]
-    }]
+      ],"volumeMounts": [{"mountPath": "/app/databases","name": "store"}]
+    }],
+    "volumes": [{"name":"store","hostPath":{"path":"'$PWD/databases'","type":"Directory"}}]
   }
 }'
 ```
@@ -324,7 +326,53 @@ we can only truncate the local tables rather than the distributed proxy tables
 
 ```sh
 kubectl exec chi-repl-05-replicated-1-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="TRUNCATE TABLE IF EXISTS test.sales_local ON CLUSTER '{cluster}';"
-``` 
+```
+
+### join two distributed tables
+
+insert data into the test database
+
+```sh
+kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="INSERT INTO test.sales_distributed SELECT today(), rand()%10, 'ON', rand(), rand() + 0.42, rand() FROM numbers(100);"
+```
+
+```sh
+kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="
+INSERT INTO test.products_distributed
+WITH
+uniq_products AS (
+  SELECT DISTINCT PRODUCT_ID FROM test.sales_distributed
+),
+products AS (
+  SELECT row_number() OVER () AS rn, PRODUCT_ID FROM uniq_products
+),
+names AS (
+  SELECT row_number() OVER () AS rn, randomString(20) as PRODUCT_NAME FROM numbers(1000)
+),
+products_with_names AS (
+  SELECT
+    PRODUCT_ID,
+    PRODUCT_NAME
+  FROM products
+  LEFT JOIN names ON products.rn = names.rn
+  where PRODUCT_ID > 0
+)
+SELECT * FROM products_with_names;"
+```
+
+global join
+
+**attention**: `GLOBAL` keyword is required, but [be careful when using it](https://clickhouse.com/docs/en/sql-reference/statements/select/join/#distributed-join)
+
+```sh
+kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="
+SELECT
+  *
+FROM test.sales_distributed as s
+GLOBAL LEFT JOIN test.products_distributed as p
+ON s.PRODUCT_ID=p.PRODUCT_ID
+LIMIT 10;"
+```
 
 
 ### exchange tables 
