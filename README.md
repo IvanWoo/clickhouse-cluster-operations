@@ -44,8 +44,8 @@ docker --namespace=k8s.io build -t my/dbmate -f Dockerfile .
 ### namespace
 
 ```sh
-kubectl create namespace zoons
-kubectl create namespace chns
+kubectl create namespace zoons --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace chns --dry-run=client -o yaml | kubectl apply -f -
 ```
 
 ### zookeeper
