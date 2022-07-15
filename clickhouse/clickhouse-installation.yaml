@@ -8,7 +8,7 @@ spec:
   defaults:
     templates:
       dataVolumeClaimTemplate: default
-      podTemplate: clickhouse:22.3
+      podTemplate: clickhouse:22.6
 
   configuration:
     settings:
@@ -41,8 +41,8 @@ spec:
             requests:
               storage: 500Mi
     podTemplates:
-      - name: clickhouse:22.3
+      - name: clickhouse:22.6
         spec:
           containers:
             - name: clickhouse-pod
-              image: clickhouse/clickhouse-server:22.3
+              image: clickhouse/clickhouse-server:22.6
