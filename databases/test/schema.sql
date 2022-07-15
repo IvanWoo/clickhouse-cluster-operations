@@ -5,6 +5,15 @@
 
 CREATE DATABASE test IF NOT EXISTS;
 
+CREATE TABLE test.entity_category_local
+(
+    `PRODUCT_ID` UInt64,
+    `CATEGORY` String
+)
+ENGINE = ReplicatedMergeTree('/clickhouse/{installation}/{cluster}/tables/{shard}/test/entity_category_local', '{replica}')
+ORDER BY PRODUCT_ID
+SETTINGS index_granularity = 8192;
+
 CREATE TABLE test.events_local
 (
     `event_date` Date,
@@ -18,14 +27,14 @@ SETTINGS index_granularity = 8192;
 
 CREATE TABLE test.products_distributed
 (
-    `PRODUCT_ID` Decimal(38, 10),
+    `PRODUCT_ID` UInt64,
     `PRODUCT_NAME` String
 )
 ENGINE = Distributed('{cluster}', 'test', 'products_local', rand());
 
 CREATE TABLE test.products_local
 (
-    `PRODUCT_ID` Decimal(38, 10),
+    `PRODUCT_ID` UInt64,
     `PRODUCT_NAME` String
 )
 ENGINE = ReplicatedMergeTree('/clickhouse/{installation}/{cluster}/tables/{shard}/test/products_local', '{replica}')
@@ -35,9 +44,9 @@ SETTINGS index_granularity = 8192;
 CREATE TABLE test.sales_distributed
 (
     `WEEK` Date32,
-    `COUNTRY_ID` Decimal(38, 9),
+    `COUNTRY_ID` UInt64,
     `REGION` String,
-    `PRODUCT_ID` Nullable(Decimal(38, 10)),
+    `PRODUCT_ID` Nullable(UInt64),
     `UNITS` Nullable(Float64),
     `DOLLAR_VOLUME` Nullable(Decimal(38, 10))
 )
@@ -46,9 +55,9 @@ ENGINE = Distributed('{cluster}', 'test', 'sales_local', rand());
 CREATE TABLE test.sales_local
 (
     `WEEK` Date32,
-    `COUNTRY_ID` Decimal(38, 9),
+    `COUNTRY_ID` UInt64,
     `REGION` String,
-    `PRODUCT_ID` Nullable(Decimal(38, 10)),
+    `PRODUCT_ID` Nullable(UInt64),
     `UNITS` Nullable(Float64),
     `DOLLAR_VOLUME` Nullable(Decimal(38, 10))
 )
@@ -77,4 +86,5 @@ INSERT INTO schema_migrations (version) VALUES
     ('20220415224306'),
     ('20220415232010'),
     ('20220421153914'),
-    ('20220711214633');
+    ('20220711214633'),
+    ('20220711214932');

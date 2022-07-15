@@ -1,10 +1,10 @@
 -- migrate:up
-CREATE TABLE IF NOT EXISTS products_local ON CLUSTER '{cluster}' (
+CREATE TABLE IF NOT EXISTS entity_category_local ON CLUSTER '{cluster}' (
     PRODUCT_ID UInt64,
-    PRODUCT_NAME String
+    CATEGORY String
 ) ENGINE = ReplicatedMergeTree('/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}', '{replica}')
 ORDER BY
     (PRODUCT_ID);
 
 -- migrate:down
-DROP TABLE IF EXISTS products_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS entity_category_local ON CLUSTER '{cluster}' SYNC;

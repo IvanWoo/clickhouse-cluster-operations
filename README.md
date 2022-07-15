@@ -22,6 +22,7 @@
 - [cleanup](#cleanup)
 - [gotcha](#gotcha)
   - [migrations](#migrations)
+  - [database is not resolved in the CTE with join](#database-is-not-resolved-in-the-cte-with-join)
 
 ## prerequisites
 - [Rancher Desktop](https://github.com/rancher-sandbox/rancher-desktop): `1.2.1`
@@ -38,7 +39,7 @@ tl;dr: `bash scripts/up.sh`
 ### build images
 
 ```sh
-docker --namespace=k8s.io build -t my/dbmate -f Dockerfile .
+nerdctl --namespace=k8s.io build -t my/dbmate -f Dockerfile .
 ```
 
 ### namespace
@@ -503,3 +504,15 @@ the final solution is to delete all the information regarding the replication on
 ```sh
 zkCli.sh deleteall /clickhouse/repl-05/replicated/tables/test/events_local
 ```
+
+### database is not resolved in the CTE with join
+
+```sh
+cat examples/cte_join.sql | curl --data-binary @- "http://analytics:admin@localhost:8123/?database=test"
+```
+
+```sh
+Code: 60. DB::Exception: Received from chi-repl-05-replicated-1-1:9000. DB::Exception: Table default.entity_category_local doesn't exist. (UNKNOWN_TABLE) (version 22.6.3.35 (official build))
+```
+
+but this query works on a 1 replica x 1 shards setup
