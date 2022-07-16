@@ -505,7 +505,7 @@ the final solution is to delete all the information regarding the replication on
 zkCli.sh deleteall /clickhouse/repl-05/replicated/tables/test/events_local
 ```
 
-### database is not resolved in the CTE with join
+### [database is not resolved in the CTE with join](https://github.com/ClickHouse/ClickHouse/issues/39278)
 
 ```sh
 cat examples/cte_join.sql | curl --data-binary @- "http://analytics:admin@localhost:8123/?database=test"
