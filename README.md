@@ -515,4 +515,4 @@ cat examples/cte_join.sql | curl --data-binary @- "http://analytics:admin@localh
 Code: 60. DB::Exception: Received from chi-repl-05-replicated-1-1:9000. DB::Exception: Table default.entity_category_local doesn't exist. (UNKNOWN_TABLE) (version 22.6.3.35 (official build))
 ```
 
-but this query works on a 1 replica x 1 shards setup
+this query fails on `2 replicas x 2 shards` and `1 replicas x 2 shards` setup, but works on `2 replicas x 1 shards` and `1 replicas x 1 shards` setup
