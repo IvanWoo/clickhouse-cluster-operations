@@ -7,6 +7,9 @@
   - [zookeeper](#zookeeper)
   - [clickhouse](#clickhouse)
 - [operations](#operations)
+  - [access control](#access-control)
+    - [create users](#create-users)
+    - [drop users](#drop-users)
   - [create the test database on cluster](#create-the-test-database-on-cluster)
   - [migrate using dbmate](#migrate-using-dbmate)
     - [on k8s cluster(preferred)](#on-k8s-clusterpreferred)
@@ -133,6 +136,32 @@ system
 ```
 
 ## operations
+
+### access control
+
+#### create users
+
+```sh
+kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="CREATE USER IF NOT EXISTS test ON CLUSTER '{cluster}' DEFAULT ROLE ALL IDENTIFIED WITH plaintext_password BY 'admin'"
+```
+
+verify
+
+```sh
+kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u test --password admin --query="SELECT 1"
+```
+
+#### drop users
+
+```sh
+kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="DROP USER IF EXISTS test ON CLUSTER '{cluster}'"
+```
+
+verify
+
+```sh
+kubectl exec chi-repl-05-replicated-0-0-0 -n chns -- clickhouse-client -u analytics --password admin --query="SELECT name, auth_type FROM system.users"
+```
 
 ### create the test database on cluster
 

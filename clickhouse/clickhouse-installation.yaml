@@ -16,12 +16,14 @@ spec:
     profiles:
       default/union_default_mode: "DISTINCT"
     users:
+      default/access_management: "1"
       # change the default password will cause auth failure of distributed read
       # default/password: admin
       analytics/password: admin
       analytics/profile: default
       analytics/quota: default
       analytics/networks/ip: "::/0"
+      analytics/access_management: "1"
     zookeeper:
       nodes:
         - host: my-zookeeper.zoons
